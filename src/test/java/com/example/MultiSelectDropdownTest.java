@@ -6,25 +6,30 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.Select;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MultiSelectDropdownTest {
 
-    WebDriver driver;
+    private static final ThreadLocal<WebDriver> tlDriver = new ThreadLocal<>();
 
-    @BeforeClass
+    private WebDriver getDriver() {
+        return tlDriver.get();
+    }
+
+    @BeforeMethod
     public void setUp() {
-        driver = new ChromeDriver();
+        WebDriver driver = new ChromeDriver();
         driver.manage().window().maximize();
+        tlDriver.set(driver);
     }
 
     @Test
     public void testMultiSelectDropdown() throws InterruptedException {
+        WebDriver driver = getDriver();
+
         // Navigate to sample page
         driver.get("https://www.w3schools.com/tags/tryit.asp?filename=tryhtml_select_multiple");
 
@@ -41,7 +46,6 @@ public class MultiSelectDropdownTest {
         // Select options
         multiSelect.selectByVisibleText("Volvo");
         multiSelect.selectByValue("opel");
-
 
         Thread.sleep(1000); // optional wait
 
@@ -70,10 +74,11 @@ public class MultiSelectDropdownTest {
         Assert.assertTrue(multiSelect.getAllSelectedOptions().isEmpty(), "All options should be deselected");
     }
 
-    @AfterClass
+    @AfterMethod
     public void tearDown() {
-        if (driver != null) {
-            driver.quit();
+        if (tlDriver.get() != null) {
+            tlDriver.get().quit();
+            tlDriver.remove();
         }
     }
 }

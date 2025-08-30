@@ -7,15 +7,17 @@ import org.openqa.selenium.WindowType;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 public class MultipleWindowsTest {
 
-    WebDriver driver;
+    private static final ThreadLocal<WebDriver> tlDriver = new ThreadLocal<>();
 
-    @BeforeClass
+    private WebDriver getDriver() {
+        return tlDriver.get();
+    }
+
+    @BeforeMethod
     public void setUp() {
         ChromeOptions options = new ChromeOptions();
         options.setAcceptInsecureCerts(true); // Accept SSL certificate warnings
@@ -23,12 +25,15 @@ public class MultipleWindowsTest {
         options.addArguments("--disable-infobars"); // removes Chrome infobar
         options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
-        driver = new ChromeDriver(options);
+        WebDriver driver = new ChromeDriver(options);
         driver.manage().window().maximize();
+        tlDriver.set(driver);
     }
 
     @Test
     public void testMultipleWindows() throws InterruptedException {
+        WebDriver driver = getDriver();
+
         // 1. Navigate to Google
         driver.get("https://www.google.com");
 
@@ -43,7 +48,7 @@ public class MultipleWindowsTest {
 
         Thread.sleep(2000); // optional wait
 
-        // Optional assertion: check page title contains "Fidelity"
+        // Optional assertion
         Assert.assertTrue(driver.getTitle().toLowerCase().contains("fidelity"),
                 "Fidelity page did not open correctly");
 
@@ -58,17 +63,18 @@ public class MultipleWindowsTest {
         searchBox.sendKeys("physio");
         searchBox.submit();
 
-        Thread.sleep(3000); // optional wait to see results
+        Thread.sleep(3000); // optional wait
 
-        // Optional assertion: check title contains search term
+        // Optional assertion
         Assert.assertTrue(driver.getTitle().toLowerCase().contains("physio"),
                 "Google search results page did not open correctly");
     }
 
-    @AfterClass
+    @AfterMethod
     public void tearDown() {
-        if (driver != null) {
-            driver.quit();
+        if (tlDriver.get() != null) {
+            tlDriver.get().quit();
+            tlDriver.remove();
         }
     }
 }
